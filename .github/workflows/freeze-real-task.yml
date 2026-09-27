@@ -1,0 +1,52 @@
+name: freeze-real-task
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/replay-001/**"
+      - ".github/workflows/freeze-real-task.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-task:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize exact upstream base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/pytest-dev/pytest.git task
+          cd task
+          git checkout --detach 3a668ea6ff24b0c8f00498c3144c63bac561d925
+          test "$(git rev-parse HEAD)" = "3a668ea6ff24b0c8f00498c3144c63bac561d925"
+      - name: Sanitize future-history channels
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd task
+          rm -rf .git
+          test ! -e .git
+          cd ..
+          ! grep -R "github.com/pytest-dev/pytest" task --exclude-dir=.git >/dev/null 2>&1 || true
+      - name: Seal TASK_S0
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -cf artifacts/task-s0.tar task
+          sha256sum artifacts/task-s0.tar | tee artifacts/TASK_S0.sha256
+          cp experiments/replay-001/task.yaml artifacts/task.yaml
+          sha256sum artifacts/task.yaml | tee artifacts/task-manifest.sha256
+          echo "instance=pytest-dev__pytest-6202" | tee artifacts/state.txt
+          echo "base_commit=3a668ea6ff24b0c8f00498c3144c63bac561d925" | tee -a artifacts/state.txt
+          echo "model_calls=0" | tee -a artifacts/state.txt
+          echo "oracle_visibility=post-agent-only" | tee -a artifacts/state.txt
+          echo "TASK_S0_SEALED" | tee -a artifacts/state.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replay-001-task-s0
+          path: artifacts/
+          if-no-files-found: error
