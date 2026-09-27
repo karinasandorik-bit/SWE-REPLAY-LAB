@@ -1,0 +1,46 @@
+name: trajectory-001
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "experiments/replay-001/runner.py"
+      - ".github/workflows/trajectory-001.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  trajectory:
+    runs-on: ubuntu-latest
+    env:
+      MODEL: gpt-5.6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require credential without exposing it
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: test -n "$OPENAI_API_KEY"
+      - name: Reconstruct frozen task and verify TASK_S0
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/pytest-dev/pytest.git task
+          cd task
+          git checkout --detach 3a668ea6ff24b0c8f00498c3144c63bac561d925
+          rm -rf .git
+          cd ..
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -cf task-s0.tar task
+          echo "f79350c8e33ac5f7350140ad63e96d8fc7493d565e7495ce90eb87ca1de97233  task-s0.tar" | sha256sum -c -
+          echo TASK_S0_VERIFIED
+      - name: Install runtime
+        run: python -m pip install --quiet openai
+      - name: Model call 1
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python experiments/replay-001/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trajectory-001
+          path: artifacts/
+          if-no-files-found: warn
