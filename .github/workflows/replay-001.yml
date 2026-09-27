@@ -1,0 +1,43 @@
+name: replay-001
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify clean tree and seal S0
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          mkdir -p artifacts
+          {
+            echo "experiment=replay-001"
+            echo "phase=PRE_MODEL"
+            echo "commit=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+            echo "status=clean"
+          } | tee artifacts/S0.txt
+          sha256sum artifacts/S0.txt | tee artifacts/S0.sha256
+          echo "S0_SEALED"
+      - name: Independent preflight oracle
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("artifacts/S0.txt").read_text()
+          assert "phase=PRE_MODEL" in s
+          assert "status=clean" in s
+          print("ORACLE_PREFLIGHT_PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replay-001-S0
+          path: artifacts/
+          if-no-files-found: error
