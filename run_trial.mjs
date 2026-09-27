@@ -1,0 +1,10 @@
+import fs from 'node:fs';import crypto from 'node:crypto';
+const ROOT='trials/TRAJECTORY-TRANSFER-TRIAL-001',MODEL=process.env.OPENAI_MODEL||'gpt-5.6-luna',KEY=process.env.OPENAI_API_KEY;
+async function call(prompt){const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,input:prompt,reasoning:{effort:'low'},max_output_tokens:32})});if(!r.ok)throw new Error('API_'+r.status+':'+await r.text());const d=await r.json();let txt='';for(const i of d.output||[])for(const c of i.content||[])if(c.type==='output_text')txt+=c.text||'';const m=txt.match(/(?:P\s*=\s*)?(0(?:\.\d+)?|1(?:\.0+)?)/);if(!m)throw new Error('UNPARSEABLE:'+txt);return Math.max(0,Math.min(1,Number(m[1])));}
+const cfg=JSON.parse(fs.readFileSync(ROOT+'/challenge.frozen.json','utf8')),base='You predict a hidden deterministic binary rule over 8-bit strings. Return only P=<probability y=1>, no explanation. ',history=[];
+for(const z of cfg.train){const p=await call(base+history.join('\n')+'\nCurrent x='+z.x);history.push('x='+z.x+' prediction='+p,'observed y='+z.y);}
+const checkpoint={protocol:'TRAJECTORY-TRANSFER-TRIAL-001',model:MODEL,history,train:cfg.train},canon=JSON.stringify(checkpoint,Object.keys(checkpoint).sort()),sha=crypto.createHash('sha256').update(canon).digest('hex');
+console.log('CHECKPOINT_SHA256='+sha);console.log('CHECKPOINT_JSON='+JSON.stringify(checkpoint));
+if(process.env.EXECUTE_TRIAL!=='1'){console.log('STATE=CHECKPOINT_READY_NOT_EVALUATED');process.exit(0);}
+const pred=[];for(const z of cfg.challenge){const p=await call(base+history.join('\n')+'\nCurrent x='+z.x);pred.push([z.id,p,z.y]);}
+const loss=pred.map(([,p,y])=>(p-y)**2),out={state:'OUTCOME',branch:'A',n:loss.length,mean_brier:loss.reduce((a,b)=>a+b,0)/loss.length,predictions:pred,checkpoint_sha256:sha};console.log('OUTCOME_JSON='+JSON.stringify(out));
