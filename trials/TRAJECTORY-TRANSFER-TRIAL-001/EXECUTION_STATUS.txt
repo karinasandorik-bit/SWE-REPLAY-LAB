@@ -1,0 +1,13 @@
+TRAJECTORY-TRANSFER-TRIAL-001 EXECUTION STATUS
+state=BLOCKED_BEFORE_OUTCOME
+protocol_sha256=3aa88aa4c76a5d412cefa9f580a6369f91f0639e291542f410be1bf2475817dd
+challenge_sha256=120b18efa5a998549ff8d6d9056fe7564bdb39ab637fe03ec0ca65a11409bda9
+equivalence_sha256=607655691ecea57f7c3b6658e9031a056ed4df53541069dc623c43f1fa17da20
+epsilon=0.02
+delta=0.02
+primary_metric=mean paired Brier loss on 48 frozen probes
+checkpoint=NOT_MATERIALIZED
+outcome=NOT_EXECUTED
+blocker_1=Railway refused new SWE-REPLAY-LAB service: Free plan resource provision limit exceeded
+blocker_2=existing failed crypto-monitor slot retained its prior package start/build behavior on redeploy despite desired service-local override; no Trial-001 checkpoint marker appeared
+integrity_rule=do not fabricate checkpoint; do not set EXECUTE_TRIAL=1 without committed checkpoint
