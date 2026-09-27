@@ -1,0 +1,47 @@
+experiment: replay-001
+frozen_before_model_call: true
+task_s0_sha256: f79350c8e33ac5f7350140ad63e96d8fc7493d565e7495ce90eb87ca1de97233
+
+trajectory_logging:
+  record_before_each_action:
+    - step_index
+    - observation_sha256
+    - workspace_sha256
+  record_action:
+    - raw_model_response
+    - parsed_action
+    - command_or_patch
+  record_after_each_action:
+    - exit_code
+    - stdout_sha256
+    - stderr_sha256
+    - workspace_sha256
+    - changed_files
+
+E_t:
+  definition: first agent-caused action after model call 1 that produces an objectively invalid transition
+  ordered_detectors:
+    - command_exit_nonzero_excluding_explicit_probe_commands
+    - newly_failing_visible_test_relative_to_immediately_previous_checkpoint
+    - syntax_or_import_failure_introduced_by_agent_delta
+    - patch_application_failure
+  exclusions:
+    - failures already present at TASK_S0
+    - deliberate diagnostic probes whose declared purpose is to test a hypothesis
+    - terminal hidden-oracle result
+  selection_rule: earliest detector event by monotonic step_index
+  checkpoint: workspace immediately before the action causing E_t
+  no_posthoc_override: true
+
+branches:
+  REAL: receives the actual error observation generated at E_t
+  NULL: receives no E_t observation and resumes from identical pre-error checkpoint
+  MATCHED: receives control information matched for byte/token budget and latency but not containing the discriminative error fact
+
+C_t:
+  primary: action_divergence_after_branch
+  secondary:
+    - recovery_to_visible_tests
+    - hidden_oracle_terminal_success
+    - steps_to_recovery
+  causal_requirement: REAL differs from NULL and MATCHED in the preregistered direction
