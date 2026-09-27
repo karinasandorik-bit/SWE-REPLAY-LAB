@@ -1,0 +1,14 @@
+experiment: replay-001
+benchmark: SWE-bench
+instance_id: pytest-dev__pytest-6202
+upstream: https://github.com/pytest-dev/pytest.git
+base_commit: 3a668ea6ff24b0c8f00498c3144c63bac561d925
+agent_network: disabled
+agent_git_metadata: removed
+oracle_visibility: post-agent-only
+model_calls_before_task_s0: 0
+invariants:
+  - exact base commit only
+  - no remote refs, tags, reflogs, or unreachable future objects in agent workspace
+  - oracle material is absent from agent-visible workspace
+  - task workspace hash is sealed before model call 1
