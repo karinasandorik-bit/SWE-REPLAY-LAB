@@ -1,0 +1,24 @@
+name: OWL Factory v3
+on:
+  push:
+    branches: [owl-ablation-001]
+    paths:
+      - 'owl_factory_v3/**'
+      - 'tests/test_factory_v3.py'
+      - '.github/workflows/owl-factory-v3.yml'
+  workflow_dispatch:
+jobs:
+  factory-v3:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Registry and recovery unit tests
+        run: python -m unittest discover -s tests -p 'test_factory_v3.py' -v
+      - name: Docker runtime smoke and oracle
+        run: python -c "from owl_factory_v3.runtime import run; assert run('sum','1.0.0',[2,3])['result']=={'value':5}"
