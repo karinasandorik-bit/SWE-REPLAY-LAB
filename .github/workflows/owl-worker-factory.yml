@@ -1,0 +1,25 @@
+name: OWL Worker Factory
+on:
+  push:
+    branches: [owl-ablation-001]
+    paths:
+      - 'owl_worker_factory.py'
+      - 'owl_capability_bootstrap.py'
+      - 'tests/test_worker_factory.py'
+      - '.github/workflows/owl-worker-factory.yml'
+  workflow_dispatch:
+jobs:
+  factory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit and integration tests
+        run: python -m unittest discover -s tests -p 'test_worker_factory.py' -v
+      - name: Demonstrate deny-by-default factory
+        run: python owl_worker_factory.py
