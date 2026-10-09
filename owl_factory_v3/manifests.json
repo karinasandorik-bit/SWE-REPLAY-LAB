@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "workers": [
+    {
+      "id": "sum",
+      "version": "1.0.0",
+      "operation": "sum",
+      "image": "python:3.11-alpine",
+      "max_items": 100
+    },
+    {
+      "id": "count",
+      "version": "1.0.0",
+      "operation": "count",
+      "image": "python:3.11-alpine",
+      "max_items": 100
+    }
+  ]
+}
